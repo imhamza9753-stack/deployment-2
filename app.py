@@ -3,8 +3,8 @@ import os
 from groq import Groq
 import json
 import re
-import string
 from datetime import datetime
+from json_repair import repair_json
 
 # ==================== PAGE CONFIG ====================
 st.set_page_config(
@@ -30,27 +30,15 @@ st.markdown("""
     * {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     }
-    
     code {
         font-family: 'Fira Code', 'Courier New', monospace;
     }
-    
-    html, body {
+    html, body, .stApp, [data-testid="stAppViewContainer"] {
         background: #f8fafc !important;
     }
-    
-    .stApp {
-        background: #f8fafc !important;
-    }
-    
-    [data-testid="stAppViewContainer"] {
-        background: #f8fafc !important;
-    }
-    
     [data-testid="stSidebar"] {
         background: #ffffff !important;
     }
-    
     .main-header {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: white;
@@ -58,37 +46,32 @@ st.markdown("""
         border-radius: 20px;
         text-align: center;
         margin-bottom: 40px;
-        box-shadow: 0 10px 30px rgba(37, 99, 235, 0.15);
+        box-shadow: 0 10px 30px rgba(37,99,235,0.15);
     }
-    
     .main-header h1 {
         font-size: 2.8em;
         font-weight: 900;
         margin: 0;
         letter-spacing: -1px;
     }
-    
     .main-header p {
         font-size: 1.1em;
         margin: 10px 0 0 0;
         opacity: 0.95;
     }
-    
     .card {
         background: white;
         border: 1px solid #e2e8f0;
         border-radius: 15px;
         padding: 30px;
         margin: 15px 0;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
     }
-    
     .card:hover {
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
         transform: translateY(-2px);
     }
-    
     .stButton > button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
@@ -97,16 +80,14 @@ st.markdown("""
         padding: 12px 28px !important;
         font-weight: 600 !important;
         font-size: 1em !important;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+        box-shadow: 0 4px 12px rgba(37,99,235,0.3) !important;
         transition: all 0.3s ease !important;
         width: 100%;
     }
-    
     .stButton > button:hover {
-        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.5) !important;
+        box-shadow: 0 8px 20px rgba(37,99,235,0.5) !important;
         transform: translateY(-2px) !important;
     }
-    
     .success-box {
         background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
         border-left: 5px solid #10b981;
@@ -116,7 +97,6 @@ st.markdown("""
         color: #065f46;
         font-weight: 500;
     }
-    
     .error-box {
         background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
         border-left: 5px solid #ef4444;
@@ -126,7 +106,6 @@ st.markdown("""
         color: #7f1d1d;
         font-weight: 500;
     }
-    
     .warning-box {
         background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
         border-left: 5px solid #f59e0b;
@@ -136,7 +115,6 @@ st.markdown("""
         color: #78350f;
         font-weight: 500;
     }
-    
     .info-box {
         background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
         border-left: 5px solid #3b82f6;
@@ -146,14 +124,12 @@ st.markdown("""
         color: #1e40af;
         font-weight: 500;
     }
-    
     .stats-container {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 15px;
         margin: 25px 0;
     }
-    
     .stat-box {
         background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
         border: 2px solid #93c5fd;
@@ -162,25 +138,21 @@ st.markdown("""
         text-align: center;
         transition: all 0.3s ease;
     }
-    
     .stat-box:hover {
         transform: translateY(-4px);
-        box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2);
+        box-shadow: 0 12px 24px rgba(59,130,246,0.2);
     }
-    
     .stat-label {
         font-size: 0.85em;
         color: #475569;
         margin-bottom: 8px;
         font-weight: 600;
     }
-    
     .stat-value {
         font-size: 2.2em;
         font-weight: 900;
         color: #1e40af;
     }
-    
     .bug-high {
         background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
         border-left: 5px solid #ef4444;
@@ -189,7 +161,6 @@ st.markdown("""
         border-radius: 8px;
         color: #7f1d1d;
     }
-    
     .bug-medium {
         background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
         border-left: 5px solid #f59e0b;
@@ -198,7 +169,6 @@ st.markdown("""
         border-radius: 8px;
         color: #78350f;
     }
-    
     .bug-low {
         background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
         border-left: 5px solid #10b981;
@@ -207,7 +177,6 @@ st.markdown("""
         border-radius: 8px;
         color: #065f46;
     }
-    
     .code-display {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -219,11 +188,9 @@ st.markdown("""
         line-height: 1.6;
         color: #1e293b;
     }
-    
     .stTabs [data-baseweb="tab-list"] {
         gap: 10px;
     }
-    
     .stTabs [data-baseweb="tab"] {
         background: #f1f5f9;
         border-radius: 10px;
@@ -232,14 +199,12 @@ st.markdown("""
         color: #475569;
         transition: all 0.3s ease;
     }
-    
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
         background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
         border-color: #93c5fd;
         color: #1e40af;
         font-weight: 600;
     }
-    
     .stTextArea textarea {
         background: white !important;
         border: 2px solid #e2e8f0 !important;
@@ -248,30 +213,21 @@ st.markdown("""
         font-family: 'Fira Code', monospace !important;
         font-size: 0.95em !important;
     }
-    
     .stTextArea textarea:focus {
         border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.1) !important;
     }
-    
     .stSelectbox [data-baseweb="select"] {
         border: 2px solid #e2e8f0 !important;
         border-radius: 12px !important;
     }
-    
-    .stCheckbox {
-        color: #1e293b;
-    }
-    
-    .stTextInput label, .stSelectbox label, .stTextArea label {
+    .stCheckbox, .stTextInput label, .stSelectbox label, .stTextArea label {
         color: #1e293b !important;
         font-weight: 600 !important;
     }
-    
     .stDivider {
         border-color: #e2e8f0 !important;
     }
-    
     .stMetric {
         background: white;
         padding: 15px;
@@ -290,7 +246,7 @@ def get_api_key():
             return key.strip()
     except:
         pass
-    # Fallback for local development
+    # Fallback for local development using .env
     try:
         from dotenv import load_dotenv
         load_dotenv()
@@ -330,7 +286,7 @@ LANGUAGES = [
     "F#", "VB.NET", "ObjectiveC"
 ]
 
-# ==================== ANALYZE FUNCTION (with JSON sanitisation) ====================
+# ==================== ANALYZE FUNCTION ====================
 def analyze_code_with_groq(code, language):
     try:
         code = code[:4000]
@@ -406,34 +362,12 @@ CODE:
                 "space_complexity": "Unknown"
             }
         
-        # Sanitise JSON string to remove invalid control characters
         json_str = match.group()
-        # Remove ASCII control characters except newline, tab, carriage return (they will be escaped later if needed)
-        control_chars = ''.join(chr(c) for c in range(0, 32) if chr(c) not in '\n\t\r')
-        json_str = re.sub(f'[{re.escape(control_chars)}]', '', json_str)
-        
-        try:
-            analysis = json.loads(json_str)
-        except json.JSONDecodeError as je:
-            # If still failing, return fallback
-            return {
-                "quality_score": 30,
-                "bugs": [{
-                    "issue": "JSON parsing error after sanitisation",
-                    "severity": "HIGH",
-                    "reason": f"Model returned malformed JSON: {str(je)[:100]}",
-                    "fix": "Re-run analysis; the AI sometimes adds unescaped characters"
-                }],
-                "security_issues": [],
-                "optimizations": [],
-                "code_smells": [],
-                "best_practices": [],
-                "fixed_code": code,
-                "time_complexity": "Unknown",
-                "space_complexity": "Unknown"
-            }
+        # Repair JSON using json_repair (fixes missing commas, unescaped quotes, etc.)
+        repaired = repair_json(json_str)
+        analysis = json.loads(repaired)
 
-        # Ensure required fields exist
+        # Ensure all required fields exist
         analysis.setdefault("bugs", [])
         analysis.setdefault("security_issues", [])
         analysis.setdefault("optimizations", [])
@@ -444,35 +378,27 @@ CODE:
         analysis.setdefault("time_complexity", "Unknown")
         analysis.setdefault("space_complexity", "Unknown")
 
-        # Ensure bugs have required fields
+        # Ensure each bug has required keys
         for bug in analysis["bugs"]:
             bug.setdefault("severity", "MEDIUM")
             bug.setdefault("reason", "No reason provided")
             bug.setdefault("fix", "No fix provided")
-        
-        # Ensure security_issues have required fields
-        for issue in analysis["security_issues"]:
-            if isinstance(issue, dict):
-                issue.setdefault("reason", "No reason provided")
-                issue.setdefault("fix", "No fix provided")
-            else:
-                # Convert string to dict
-                issue = {"issue": str(issue), "reason": "No reason", "fix": "No fix"}
-        
-        # If no bugs found, add a placeholder
+
+        # If no bugs, add a placeholder
         if not analysis["bugs"]:
             analysis["bugs"] = [{
                 "issue": "No explicit bugs detected",
                 "severity": "LOW",
-                "reason": "No clear syntax or logic errors, but hidden edge cases may exist.",
-                "fix": "Add validation, test edge cases, and review logic"
+                "reason": "No clear errors found. Edge cases may still exist.",
+                "fix": "Add validation, test edge cases, and review logic."
             }]
-        
+
+        # If no security issues, add a placeholder
         if not analysis["security_issues"]:
             analysis["security_issues"] = [{
                 "issue": "No explicit security issues detected",
-                "reason": "Model did not find direct vulnerabilities",
-                "fix": "Still review input validation, authentication, and data handling"
+                "reason": "Model did not find direct vulnerabilities.",
+                "fix": "Still review input validation, authentication, and data handling."
             }]
 
         return analysis
@@ -496,7 +422,6 @@ CODE:
         }
 
 # ==================== MAIN PAGE ====================
-
 st.markdown("""
 <div class="main-header">
     <h1>🔍 Code Analyzer Pro</h1>
@@ -504,7 +429,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Check API key
+# API key checks
 if not st.session_state.api_key:
     st.markdown("""
     <div class="error-box">
@@ -529,17 +454,13 @@ if not st.session_state.groq_client:
     </div>
     """, unsafe_allow_html=True)
 
-# Layout
+# Main layout
 col1, col2 = st.columns([2.2, 1.3], gap="large")
 
 with col1:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     selected_language = st.selectbox("📌 Select Programming Language", LANGUAGES, index=0)
-    code_input = st.text_area(
-        "💻 Paste Your Code",
-        height=380,
-        placeholder="def hello():\n    print('Hello, World!')"
-    )
+    code_input = st.text_area("💻 Paste Your Code", height=380, placeholder="def hello():\n    print('Hello, World!')")
     st.write("")
     opt_col1, opt_col2, opt_col3 = st.columns(3)
     with opt_col1:
@@ -582,12 +503,14 @@ with col2:
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Results section
+# ==================== RESULTS SECTION ====================
 if st.session_state.current_analysis:
     analysis = st.session_state.current_analysis
-    st.markdown('<div class="success-box"><strong>✅ Analysis Complete!</strong> Your code has been analyzed successfully.</div>', unsafe_allow_html=True)
     
     st.markdown(f"""
+    <div class="success-box">
+    <strong>✅ Analysis Complete!</strong> Your code has been analyzed successfully.
+    </div>
     <div class="stats-container">
         <div class="stat-box"><div class="stat-label">Quality Score</div><div class="stat-value">{analysis.get('quality_score',0)}/100</div></div>
         <div class="stat-box"><div class="stat-label">Bugs Found</div><div class="stat-value">{len(analysis.get('bugs',[]))}</div></div>
@@ -610,9 +533,9 @@ if st.session_state.current_analysis:
         for i, bug in enumerate(bugs, 1):
             severity = bug.get('severity', 'MEDIUM').upper()
             emoji = {'HIGH':'🔴','MEDIUM':'🟡','LOW':'🟢'}.get(severity,'⚪')
-            cls = f"bug-{severity.lower()}"
+            css_class = f"bug-{severity.lower()}"
             st.markdown(f"""
-            <div class="{cls}">
+            <div class="{css_class}">
             <strong>{emoji} Bug #{i} - {severity}</strong><br><br>
             <b>❌ Issue:</b> {bug.get('issue','')}<br>
             <b>🧠 Why it happens:</b> {bug.get('reason','Not explained')}<br>
@@ -623,13 +546,13 @@ if st.session_state.current_analysis:
     
     with tab2:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        sec = analysis.get('security_issues', [])
-        for i, issue in enumerate(sec, 1):
+        security = analysis.get('security_issues', [])
+        for i, issue in enumerate(security, 1):
             if isinstance(issue, dict):
-                txt = issue.get('issue', str(issue))
+                issue_text = issue.get('issue', str(issue))
             else:
-                txt = str(issue)
-            st.markdown(f'<div class="error-box"><strong>🔒 Issue #{i}:</strong> {txt}</div>', unsafe_allow_html=True)
+                issue_text = str(issue)
+            st.markdown(f'<div class="error-box"><strong>🔒 Issue #{i}:</strong> {issue_text}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
     
     with tab3:
@@ -641,11 +564,11 @@ if st.session_state.current_analysis:
     
     with tab4:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        col_c1, col_c2 = st.columns(2)
-        with col_c1:
+        tc1, tc2 = st.columns(2)
+        with tc1:
             st.markdown("**⏱️ Time Complexity**")
             st.markdown(f'<div class="code-display"><pre>{analysis.get("time_complexity","Unknown")}</pre></div>', unsafe_allow_html=True)
-        with col_c2:
+        with tc2:
             st.markdown("**💾 Space Complexity**")
             st.markdown(f'<div class="code-display"><pre>{analysis.get("space_complexity","Unknown")}</pre></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -660,13 +583,13 @@ if st.session_state.current_analysis:
     st.write("")
     st.markdown("---")
     if show_comparison:
-        col1a, col2a = st.columns(2)
-        with col1a:
+        cola, colb = st.columns(2, gap="large")
+        with cola:
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.markdown("#### 📝 Original Code")
             st.markdown(f'<div class="code-display"><pre>{code_input}</pre></div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
-        with col2a:
+        with colb:
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.markdown("#### ✅ Improved Code")
             fixed = analysis.get('fixed_code', code_input)
@@ -678,20 +601,67 @@ if st.session_state.current_analysis:
         st.markdown(f'<div class="code-display"><pre>{code_input}</pre></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-# Sidebar
+# ==================== SIDEBAR ====================
 with st.sidebar:
-    st.markdown('<div class="card"><h3>🚀 Model Information</h3><p><strong>Model:</strong> LLaMA 3.1 70B</p><p><strong>Provider:</strong> Groq</p><p><strong>Speed:</strong> ⚡ Ultra-Fast</p></div>', unsafe_allow_html=True)
-    st.markdown('<div class="card"><h3>✨ Features</h3><ul><li>Code Quality Analysis</li><li>Bug Detection & Severity</li><li>Security Vulnerability Scan</li><li>Performance Optimization Tips</li><li>Time & Space Complexity</li><li>Best Practices</li><li>Code Smell Detection</li></ul></div>', unsafe_allow_html=True)
-    st.markdown('<div class="card"><h3>📖 How to Use</h3><ol><li>Select your programming language</li><li>Paste your code in the editor</li><li>Click "Analyze Code" button</li><li>Review the detailed analysis</li><li>See improvements in fixed code</li></ol></div>', unsafe_allow_html=True)
-    st.markdown('<div class="card"><h3>🎓 Supported Languages</h3><p>Python • JavaScript • Java • C++ • Go • Rust • PHP • Ruby • TypeScript • C# • Swift • Kotlin • SQL • R • And 13+ more</p></div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="card">
+    <h3>🚀 Model Information</h3>
+    <p><strong>Model:</strong> LLaMA 3.1 70B</p>
+    <p><strong>Provider:</strong> Groq</p>
+    <p><strong>Speed:</strong> ⚡ Ultra-Fast</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="card">
+    <h3>✨ Features</h3>
+    <ul style="margin:0; padding-left:20px; line-height:1.8;">
+    <li>Code Quality Analysis</li>
+    <li>Bug Detection & Severity</li>
+    <li>Security Vulnerability Scan</li>
+    <li>Performance Optimization Tips</li>
+    <li>Time & Space Complexity</li>
+    <li>Best Practices</li>
+    <li>Code Smell Detection</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="card">
+    <h3>📖 How to Use</h3>
+    <ol style="margin:0; padding-left:20px; line-height:1.8;">
+    <li>Select your programming language</li>
+    <li>Paste your code in the editor</li>
+    <li>Click "Analyze Code" button</li>
+    <li>Review the detailed analysis</li>
+    <li>See improvements in fixed code</li>
+    </ol>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="card">
+    <h3>🎓 Supported Languages</h3>
+    <p style="margin:0; line-height:1.6; font-size:0.9em;">
+    Python • JavaScript • Java • C++ • Go • Rust • PHP • Ruby • TypeScript • C# • Swift • Kotlin • SQL • R • And 13+ more
+    </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     if st.session_state.score_history:
-        st.markdown('<div class="card"><h3>📊 Recent Scores</h3></div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="card">
+        <h3>📊 Recent Scores</h3>
+        </div>
+        """, unsafe_allow_html=True)
         for i, score in enumerate(st.session_state.score_history[-5:], 1):
-            st.metric(f"Analysis {i}", f"{score}/100")
+            st.metric(f"Analysis {i}", f"{score}/100", delta=None)
 
+# Footer
 st.markdown("""
 <div style="text-align: center; padding: 30px 20px; margin-top: 50px; border-top: 1px solid #e2e8f0; color: #64748b;">
-    <p><strong>🔍 Code Analyzer Pro</strong> • Powered by Groq AI</p>
-    <p style="font-size: 0.9em;">Professional code review in seconds • Built for developers</p>
+    <p style="margin:0;"><strong>🔍 Code Analyzer Pro</strong> • Powered by Groq AI</p>
+    <p style="font-size:0.9em; margin-top:8px; color:#94a3b8;">Professional code review in seconds • Built for developers</p>
 </div>
 """, unsafe_allow_html=True)
