@@ -1,7 +1,6 @@
 import streamlit as st
 import os
 from groq import Groq
-from dotenv import load_dotenv
 import json
 import time
 from datetime import datetime
@@ -9,7 +8,7 @@ import re
 import sys
 
 # ==================== LOAD ENVIRONMENT ====================
-load_dotenv()
+
 
 # ==================== PAGE CONFIG ====================
 st.set_page_config(
@@ -301,16 +300,16 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==================== SESSION STATE ====================
+# ==================== SESSION STATE ====================
 if 'groq_client' not in st.session_state:
-    api_key = os.getenv("GROQ_API_KEY", "").strip()
-    st.session_state.groq_client = None
-    st.session_state.api_key = api_key
-    
-    if api_key and api_key != "your_groq_api_key_here":
-        try:
-            st.session_state.groq_client = Groq(api_key=api_key)
-        except Exception as e:
-            st.session_state.groq_client = None
+    try:
+        # Read API key from Streamlit secrets (works on cloud)
+        api_key = st.secrets["GROQ_API_KEY"]
+        st.session_state.groq_client = Groq(api_key=api_key)
+        st.session_state.api_key = api_key
+    except Exception:
+        st.session_state.groq_client = None
+        st.session_state.api_key = None
 
 if 'analysis_history' not in st.session_state:
     st.session_state.analysis_history = []
