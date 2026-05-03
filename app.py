@@ -315,7 +315,11 @@ if 'current_analysis' not in st.session_state:
 
 if 'score_history' not in st.session_state:
     st.session_state.score_history = []
-
+#----------------------------------------------------
+# Temporary debug – remove after confirming
+st.write("Debug: Secret exists?", "GROQ_API_KEY" in st.secrets)
+if "GROQ_API_KEY" in st.secrets:
+    st.write("Debug: Key starts with", st.secrets["GROQ_API_KEY"][:8] + "...")
 # ==================== CONSTANTS ====================
 LANGUAGES = [
     "Python", "JavaScript", "TypeScript", "Java", "C", "C++", "C#", "Go", "Rust",
