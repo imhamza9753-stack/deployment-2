@@ -1,11 +1,15 @@
 import streamlit as st
 import os
 from groq import Groq
+from dotenv import load_dotenv
 import json
 import time
 from datetime import datetime
 import re
 import sys
+
+# ==================== LOAD ENVIRONMENT ====================
+load_dotenv()
 
 # ==================== PAGE CONFIG ====================
 st.set_page_config(
@@ -298,14 +302,15 @@ st.markdown("""
 
 # ==================== SESSION STATE ====================
 if 'groq_client' not in st.session_state:
-    try:
-        # Read API key from Streamlit secrets (works on cloud)
-        api_key = st.secrets["GROQ_API_KEY"]
-        st.session_state.groq_client = Groq(api_key=api_key)
-        st.session_state.api_key = api_key
-    except Exception:
-        st.session_state.groq_client = None
-        st.session_state.api_key = None
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
+    st.session_state.groq_client = None
+    st.session_state.api_key = api_key
+    
+    if api_key and api_key != "your_groq_api_key_here":
+        try:
+            st.session_state.groq_client = Groq(api_key=api_key)
+        except Exception as e:
+            st.session_state.groq_client = None
 
 if 'analysis_history' not in st.session_state:
     st.session_state.analysis_history = []
@@ -315,11 +320,7 @@ if 'current_analysis' not in st.session_state:
 
 if 'score_history' not in st.session_state:
     st.session_state.score_history = []
-#----------------------------------------------------
-# Temporary debug – remove after confirming
-st.write("Debug: Secret exists?", "GROQ_API_KEY" in st.secrets)
-if "GROQ_API_KEY" in st.secrets:
-    st.write("Debug: Key starts with", st.secrets["GROQ_API_KEY"][:8] + "...")
+
 # ==================== CONSTANTS ====================
 LANGUAGES = [
     "Python", "JavaScript", "TypeScript", "Java", "C", "C++", "C#", "Go", "Rust",
@@ -462,7 +463,23 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Check if client is initialized (API key missing or invalid)
+# Check API Key
+api_key = os.getenv("GROQ_API_KEY", "").strip()
+if not api_key or api_key == "your_groq_api_key_here":
+    st.markdown("""
+    <div class="error-box">
+    <strong>❌ API Key Not Configured</strong><br>
+    <br>
+    <strong>Steps to fix:</strong><br>
+    1. Get free API key: <a href="https://console.groq.com/" target="_blank">https://console.groq.com/</a><br>
+    2. Edit <code>.env</code> file in your project folder<br>
+    3. Add this line: <code>GROQ_API_KEY=gsk_your_actual_key_here</code><br>
+    4. Save and restart: <code>streamlit run app.py</code>
+    </div>
+    """, unsafe_allow_html=True)
+    st.stop()
+
+# Check if client is initialized
 if not st.session_state.groq_client:
     st.markdown("""
     <div class="error-box">
@@ -470,8 +487,7 @@ if not st.session_state.groq_client:
     Could not connect to Groq API. Please check:<br>
     • Your API key is correct<br>
     • Your internet connection is working<br>
-    • Your API key is not expired<br><br>
-    <strong>For deployment:</strong> Add your Groq API key in Streamlit Cloud → Settings → Secrets as <code>GROQ_API_KEY</code>.
+    • Your API key is not expired
     </div>
     """, unsafe_allow_html=True)
 
@@ -621,12 +637,7 @@ if st.session_state.current_analysis:
         security = analysis.get('security_issues', [])
         if security:
             for i, issue in enumerate(security, 1):
-                # issue may be a dict or a string; handle both
-                if isinstance(issue, dict):
-                    issue_text = issue.get('issue', str(issue))
-                else:
-                    issue_text = str(issue)
-                st.markdown(f'<div class="error-box"><strong>🔒 Issue #{i}:</strong> {issue_text}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="error-box"><strong>🔒 Issue #{i}:</strong> {issue}</div>', unsafe_allow_html=True)
         else:
             st.markdown('<div class="success-box"><strong>✅ No security issues found!</strong></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
